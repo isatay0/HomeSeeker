@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeSeeker - Space Planet Analyzer</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="./imgs/logo.png">
+
+  <meta name="description" content="Advanced space planet habitability analysis and lightcurve detection">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header__inner">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="./home.html" class="nav-link">Home</a></li>
+          <li class="nav-item"><a href="./index.html" class="nav-link">Analysis</a></li>
+          <li class="nav-item"><a href="./homeseeker.html" class="nav-link">Assistant</a></li>
+        </ul>
+        <div class="header-profile">
+          <div class="header-username">HomeSeeker</div>
+          <div class="header-logo">HS</div>
+        </div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="main">
+    <div class="container">
+      <h1 class="main-header">Planet Analysis Dashboard</h1>
+      <a href="https://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=PS" class="sixseven" target="_blank">Planet Archive</a>
+      
+      <div class="planet-selector">
+        <label for="planetSelect" class="planet-selector-label">🌍 Quick Planet Selection:</label>
+        <select id="planetSelect" class="planet-select">
+          <option value="">Choose a planet to auto-fill form...</option>
+          <option value="earth">Earth (Our Home Planet)</option>
+          <option value="mars">Mars (Red Planet)</option>
+          <option value="jupiter">Jupiter (Gas Giant)</option>
+          <option value="kepler440b">Kepler-440b (Super-Earth)</option>
+          <option value="venus">Venus (Unhabitable Hell)</option>
+        </select>
+      </div>
+      
+      <form id="planetForm" class="form-box">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Planet Radius (Earth radii):</label>
+            <input type="number" step="any" name="planet_radius" placeholder="e.g., 1.5" required>
+          </div>
+          <div class="form-group">
+            <label>Planet Mass (Earth masses):</label>
+            <input type="number" step="any" name="planet_mass" placeholder="e.g., 2.3" required>
+          </div>
+          <div class="form-group">
+            <label>Planet Density (g/cm³):</label>
+            <input type="number" step="any" name="planet_density" placeholder="e.g., 5.5" required>
+          </div>
+          <div class="form-group">
+            <label>Equilibrium Temp (K):</label>
+            <input type="number" step="any" name="planet_temperature" placeholder="e.g., 288" required>
+          </div>
+          <div class="form-group">
+            <label>Semi-Major Axis (AU):</label>
+            <input type="number" step="any" name="semi_major_axis" placeholder="e.g., 1.0" required>
+          </div>
+          <div class="form-group">
+            <label>Orbital Eccentricity:</label>
+            <input type="number" step="any" name="orbital_eccentricity" placeholder="e.g., 0.016" required>
+          </div>
+          <div class="form-group">
+            <label>Stellar Temp (K):</label>
+            <input type="number" step="any" name="stellar_temp" placeholder="e.g., 5778" required>
+          </div>
+          <div class="form-group">
+            <label>Stellar Mass (Solar masses):</label>
+            <input type="number" step="any" name="stellar_mass" placeholder="e.g., 1.0" required>
+          </div>
+          <div class="form-group">
+            <label>Stellar Radius (Solar radii):</label>
+            <input type="number" step="any" name="stellar_radius" placeholder="e.g., 1.0" required>
+          </div>
+          <div class="form-group">
+            <label>Stellar Luminosity:</label>
+            <input type="number" step="any" name="stellar_luminosity" placeholder="e.g., 1.0" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">Analyze Habitability</button>
+      </form>
+      
+      <div id="predictionResult" class="result-box"></div>
+
+      <h2 class="main-header">Lightcurve Analysis with AI</h2>
+      <form id="lightcurveForm" class="form-box">
+        <div class="form-group">
+          <label>Target Star (KIC/TIC/Kepler ID):</label>
+          <input type="text" name="target_star" placeholder="e.g., Kepler-22" required>
+        </div>
+        <button type="submit" class="btn-submit">Generate Lightcurves & AI Analysis</button>
+      </form>
+      
+      <div id="lightcurveResult" style="display:none; margin-top:20px;"></div>
+
+      <section class="chat-baymax">
+        <div class="chat-logo">
+          <div class="chat-logo-img">HS</div>
+          <h1 class="chat-logo-name">HomeSeeker AI</h1>
+        </div>
+        <div class="chat-section" id="chat-section"></div>
+        <label class="chat-input">
+          <img src="./imgs/voice-mail--mic-audio-mike-music-microphone.svg" 
+               alt="" class="input-voice input-icon">
+          <input type="text" id="user-input" class="input-text" placeholder="Enter your message...">
+          <img src="./imgs/mail-send-email-message--send-email-paper-airplane-deliver.svg" 
+               alt="" class="input-submit" id="submit-btn">
+        </label>
+      </section>
+    </div>
+  </main>
+
+<script>
+  let lastPrediction = '';
+  let planetValues = [];
+
+  const planetData = {
+    earth: {
+      planet_radius: 1.0,
+      planet_mass: 1.0,
+      planet_density: 5.51,
+      planet_temperature: 288,
+      semi_major_axis: 1.0,
+      orbital_eccentricity: 0.0167,
+      stellar_temp: 5778,
+      stellar_mass: 1.0,
+      stellar_radius: 1.0,
+      stellar_luminosity: 1.0
+    },
+    mars: {
+      planet_radius: 0.533,
+      planet_mass: 0.11,
+      planet_density: 3.93,
+      planet_temperature: 209.8,
+      semi_major_axis: 1.52,
+      orbital_eccentricity: 0.09,
+      stellar_temp: 5778,
+      stellar_mass: 1.0,
+      stellar_radius: 1.0,
+      stellar_luminosity: 1.0
+    },
+    jupiter: {
+      planet_radius: 11.2,
+      planet_mass: 317.8,
+      planet_density: 1.3,
+      planet_temperature: 122,
+      semi_major_axis: 5.2,
+      orbital_eccentricity: 0.04,
+      stellar_temp: 5778,
+      stellar_mass: 1.0,
+      stellar_radius: 1.0,
+      stellar_luminosity: 1.0
+    },
+    kepler440b: {
+      planet_radius: 1.34,
+      planet_mass: 2.34,
+      planet_density: 5.9,
+      planet_temperature: 233,
+      semi_major_axis: 0.41,
+      orbital_eccentricity: 0.04,
+      stellar_temp: 4400,
+      stellar_mass: 0.61,
+      stellar_radius: 0.60,
+      stellar_luminosity: 0.12
+    },
+    venus: {
+      planet_radius: 0.95,
+      planet_mass: 0.82,
+      planet_density: 5.24,
+      planet_temperature: 737,
+      semi_major_axis: 0.72,
+      orbital_eccentricity: 0.007,
+      stellar_temp: 5778,
+      stellar_mass: 1.0,
+      stellar_radius: 1.0,
+      stellar_luminosity: 1.0
+    }
+  };
+
+  document.getElementById('planetSelect').addEventListener('change', function() {
+    const selectedPlanet = this.value;
+    
+    if (selectedPlanet && planetData[selectedPlanet]) {
+      const data = planetData[selectedPlanet];
+      
+      document.querySelector('input[name="planet_radius"]').value = data.planet_radius;
+      document.querySelector('input[name="planet_mass"]').value = data.planet_mass;
+      document.querySelector('input[name="planet_density"]').value = data.planet_density;
+      document.querySelector('input[name="planet_temperature"]').value = data.planet_temperature;
+      document.querySelector('input[name="semi_major_axis"]').value = data.semi_major_axis;
+      document.querySelector('input[name="orbital_eccentricity"]').value = data.orbital_eccentricity;
+      document.querySelector('input[name="stellar_temp"]').value = data.stellar_temp;
+      document.querySelector('input[name="stellar_mass"]').value = data.stellar_mass;
+      document.querySelector('input[name="stellar_radius"]').value = data.stellar_radius;
+      document.querySelector('input[name="stellar_luminosity"]').value = data.stellar_luminosity;
+      
+      const notification = document.createElement('div');
+      notification.className = 'planet-fill-notification';
+      notification.textContent = `✅ Form filled with ${this.options[this.selectedIndex].text} data`;
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #1e40af, #1e3a8a);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 10000;
+        box-shadow: 0 4px 20px rgba(30, 64, 175, 0.4);
+        animation: slideIn 0.3s ease;
+      `;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+      }, 3000);
+    }
+  });
+
+  document.getElementById("planetForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const planetData = {
+      pl_rade: parseFloat(formData.get("planet_radius")),
+      pl_bmasse: parseFloat(formData.get("planet_mass")),
+      pl_dens: parseFloat(formData.get("planet_density")),
+      pl_eqt: parseFloat(formData.get("planet_temperature")),
+      pl_orbsmax: parseFloat(formData.get("semi_major_axis")),
+      pl_orbeccen: parseFloat(formData.get("orbital_eccentricity")),
+      st_teff: parseFloat(formData.get("stellar_temp")),
+      st_mass: parseFloat(formData.get("stellar_mass")),
+      st_rad: parseFloat(formData.get("stellar_radius")),
+      st_lum: parseFloat(formData.get("stellar_luminosity"))
+    };
+    
+    planetValues = Object.values(planetData);
+    const resultBox = document.getElementById("predictionResult");
+
+    try {
+      const response = await fetch("https://homeseekerpy.onrender.com/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(planetData)
+      });
+
+      const result = await response.json();
+      lastPrediction = result.prediction;
+      
+      resultBox.style.display = "block";
+      resultBox.className = "result-box " + (result.prediction === "Habitable" ? "success" : "danger");
+      resultBox.innerHTML = `
+        <p>Prediction: <strong>${result.prediction}</strong></p>
+        <p>Probability: ${result.probability.map(p => p.toFixed(3)).join(" | ")}</p>
+      `;
+    } catch (err) {
+      resultBox.style.display = "block";
+      resultBox.className = "result-box danger";
+      resultBox.innerHTML = `<p>Error: ${err.message}</p>`;
+    }
+  });
+
+  document.getElementById("lightcurveForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const formData = new FormData(event.target);
+    const target_star = formData.get("target_star");
+
+    const resultBox = document.getElementById("lightcurveResult");
+    resultBox.style.display = "block";
+    resultBox.innerHTML = "<p style='color:#cbd5e1;'>Loading lightcurves and running AI analysis...</p>";
+
+    try {
+      const response = await fetch("https://homeseekerpy.onrender.com/lightcurve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target_star })
+      });
+
+      const result = await response.json();
+
+      if (result.error) {
+        resultBox.innerHTML = `<p style="color:#f87171;">Error: ${result.error}</p>`;
+        return;
+      }
+
+      let html = `<h3 style="color:#f8fafc; margin-bottom:24px;">Lightcurves for ${target_star}</h3>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">`;
+      
+      const plots = result.plots || {};
+      for (const [name, img] of Object.entries(plots)) {
+        html += `
+          <div style="border:1px solid rgba(59, 130, 246, 0.2); padding:16px; border-radius:12px; background:rgba(30, 41, 59, 0.7);">
+            <h4 style="text-transform:capitalize; color:#cbd5e1; margin-bottom:12px;">${name.replace(/_/g, " ")}</h4>
+            <img src="data:image/png;base64,${img}" style="max-width:100%; border-radius:8px;"/>
+          </div>`;
+      }
+      html += `</div>`;
+      html += `<p style="margin-top:24px; color:#94a3b8;">Analyzing images...</p>`;
+      resultBox.innerHTML = html;
+
+
+      
+      
+      html += `<div style="margin-top:24px; padding:32px; border-radius:16px; background:rgba(15, 23, 42, 0.95); border:1px solid rgba(59, 130, 246, 0.3); box-shadow: 0 8px 32px rgba(10, 15, 26, 0.6);">`;
+      html += `<h3 style="color:#f8fafc; margin-bottom:24px; font-size:28px; font-weight:600;">🔍 AI Plot Analysis</h3>`;
+      html += `<p style="color:#94a3b8; margin-bottom:20px;">Getting AI explanation of the plots...</p>`;
+      html += `<div id="plot-explanation" style="color:#cbd5e1; line-height:1.6;"></div>`;
+      html += `</div>`;
+      
+      resultBox.innerHTML = html;
+      
+      if (plots.periodogram && plots.folded_lightcurve) {
+        try {
+          const explainResponse = await fetch("https://homeseekerpy.onrender.com/explain_plots", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              periodogram: plots.periodogram,
+              folded_lightcurve: plots.folded_lightcurve,
+              target_star: target_star
+            })
+          });
+          
+          const explainResult = await explainResponse.json();
+          if (explainResult.explanation) {
+            document.getElementById("plot-explanation").innerHTML = `
+              <div style="background:rgba(30, 41, 59, 0.7); padding:20px; border-radius:12px; border-left:4px solid #3b82f6;">
+                <h4 style="color:#f8fafc; margin-bottom:16px;">🤖 AI Analysis</h4>
+                <div style="white-space: pre-wrap; color:#cbd5e1;">${explainResult.explanation}</div>
+              </div>
+            `;
+          } else {
+            document.getElementById("plot-explanation").innerHTML = `
+              <div style="color:#f87171;">Failed to get AI explanation: ${explainResult.error || 'Unknown error'}</div>
+            `;
+          }
+        } catch (err) {
+          document.getElementById("plot-explanation").innerHTML = `
+            <div style="color:#f87171;">Error getting AI explanation: ${err.message}</div>
+          `;
+        }
+      }
+    
+    } catch (err) {
+      resultBox.innerHTML = `<p style="color:#f87171;">Request failed: ${err.message}</p>`;
+    }
+  });
+
+  const chatText = document.getElementById('chat-section');
+  const recognitionButton = document.querySelector('.input-voice');
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU';
+    recognition.interimResults = false;
+
+    recognition.onresult = async (event) => {
+      const text = event.results[0][0].transcript;
+      if (text) {
+        await sendMessage(text);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      chatText.innerHTML += `<p style="color:#f87171;"><b>Recognition error:</b> ${event.error}</p>`;
+    };
+
+    recognitionButton.addEventListener('click', () => {
+      recognition.start();
+      chatText.innerHTML += `<p style="color:#94a3b8;"><em>🎙 Recording...</em></p>`;
+    });
+  }
+
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const input = document.getElementById('user-input');
+    if (input.value.trim()) {
+      await sendMessage(input.value.trim());
+      input.value = "";
+    }
+  });
+
+  document.getElementById('user-input').addEventListener('keypress', async (e) => {
+    if (e.key === 'Enter') {
+      const input = document.getElementById('user-input');
+      if (input.value.trim()) {
+        await sendMessage(input.value.trim());
+        input.value = "";
+      }
+    }
+  });
+
+  async function sendMessage(message) {
+    try {
+      chatText.innerHTML += `<div class="chat-text"><p><b>You:</b> ${message}</p></div>`;
+      
+      if (lastPrediction) {
+        const contextInfo = `
+        Context: My planet is ${lastPrediction}.
+        Planet parameters: Radius=${planetValues[0]}, Mass=${planetValues[1]}, Density=${planetValues[2]}, 
+        Temperature=${planetValues[3]}, Semi-Major Axis=${planetValues[4]}, Eccentricity=${planetValues[5]}, 
+        Stellar Temp=${planetValues[6]}, Stellar Mass=${planetValues[7]}, Stellar Radius=${planetValues[8]}, 
+        Stellar Luminosity=${planetValues[9]}
+        
+        User question: ${message}`;
+        message = contextInfo;
+      }
+
+      message += ' Keep your answers concise and conversational. Avoid excessive formatting.';
+
+      const response = await fetch('https://homeseekernode.onrender.com/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+
+      if (data.reply) {
+        chatText.innerHTML += `<div class="chat-text"><p><b>HomeSeeker:</b> ${data.reply}</p></div>`;
+        chatText.scrollTop = chatText.scrollHeight;
+      } else {
+        chatText.innerHTML += `<p style="color:#f87171;"><b>Error:</b> ${data.error || 'No response'}</p>`;
+      }
+    } catch (error) {
+      chatText.innerHTML += `<p style="color:#f87171;"><b>Request error:</b> ${error.message}</p>`;
+    }
+  }
+</script>
+</body>
+</html>

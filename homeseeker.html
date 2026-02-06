@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeSeeker</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="./imgs/logo.png">
+
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header__inner">
+        <ul class="nav-list">
+          <li class="nav-item"><a href="./home.html" class="nav-link">Home</a></li>
+          <li class="nav-item"><a href="./index.html" class="nav-link">Analysis</a></li>
+          <li class="nav-item"><a href="./homeseeker.html" class="nav-link">Assistant</a></li>
+        </ul>
+        <div class="header-profile">
+          <div class="header-username">HomeSeeker</div>
+          <div class="header-logo">HS</div>
+        </div>
+      </div>
+    </div>
+  </header>
+  
+  <section class="chat-baymax">
+    <div class="chat-logo">
+      <div class="chat-logo-img">HS</div>
+      <h1 class="chat-logo-name">HomeSeeker AI</h1>
+    </div>
+    <div class="chat-section" id="chat-section"></div>
+    <label class="chat-input">
+      <img src="./imgs/voice-mail--mic-audio-mike-music-microphone.svg" 
+            alt="" class="input-voice input-icon">
+      <input type="text" id="user-input" class="input-text" placeholder="Enter your message...">
+      <img src="./imgs/mail-send-email-message--send-email-paper-airplane-deliver.svg" 
+            alt="" class="input-submit" id="submit-btn">
+    </label>
+  </section>
+  <script>
+    const chatText = document.getElementById('chat-text');
+    const recognitionButton = document.querySelector('.input-voice');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ru-RU';
+      recognition.interimResults = false;
+
+      recognition.onresult = async (event) => {
+        const text = event.results[0][0].transcript;
+        if (text) {
+          await sendMessage(text);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        chatText.innerHTML += `<p><b>Ошибка распознавания:</b> ${event.error}</p>`;
+      };
+
+      recognitionButton.addEventListener('click', () => {
+        recognition.start();
+        chatText.innerHTML += `<p><em>🎙 Идет запись...</em></p>`;
+      });
+    } else {
+      chatText.innerHTML = `<p>Ваш браузер не поддерживает голосовой ввод.</p>`;
+    }
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+      const input = document.getElementById('user-input');
+      if (input.value.trim()) {
+        await sendMessage1(input.value.trim());
+        input.value = "";
+      }
+    });
+
+    async function sendMessage1(message) {
+      chatText.innerHTML += `<p><b>Вы:</b> ${message}</p>`;
+      try {
+        const response = await fetch('http://localhost:3000/find', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        
+        const data = await response.json();
+        if (data.reply=='0') {
+          await sendMessage(message);
+        } else {
+          const values = data.reply.split(",");
+          const planetData = {
+            pl_rade: parseFloat(values[0]),
+            pl_bmasse: parseFloat(values[1]),
+            pl_dens: parseFloat(values[2]),
+            pl_eqt: parseFloat(values[3]),
+            pl_orbsmax: parseFloat(values[4]),
+            pl_orbeccen: parseFloat(values[5]),
+            st_teff: parseFloat(values[6]),
+            st_mass: parseFloat(values[7]),
+            st_rad: parseFloat(values[8]),
+            st_lum: parseFloat(values[9])
+          };
+
+          try {
+            const response = await fetch("https://homeseekerpy.onrender.com/predict", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(planetData)
+            });
+
+            const result = await response.json();
+            if (result.prediction=='Habitable'){
+              message+=`. Tell me this planet is habitable and that you are ${result.probability[1].toFixed(3)*100} percent confident.`
+            }
+            else{
+              message+=`. Tell me this planet is Non-habitable and that you are ${result.probability[0].toFixed(3)*100} percent confident.`
+            }
+
+            console.log(result.probability)
+            await sendMessage(message);
+
+          } catch (err) {
+            chatText.innerHTML += `<p><b>Ошибка при запросе:</b> ${error.message}</p>`;
+            
+          }
+        }
+      } catch (error) {
+        chatText.innerHTML += `<p><b>Ошибка при запросе:</b> ${error.message}</p>`;
+      }
+    }
+
+    async function sendMessage(message) {
+      try {
+        
+
+        const response = await fetch('https://homeseekernode.onrender.com/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        if (data.reply) {
+          
+          chatText.innerHTML += `<p><b>Bot:</b> ${data.reply}</p>`;
+        } else {
+          chatText.innerHTML += `<p><b>Ошибка:</b> ${data.error || 'Нет ответа'}</p>`;
+        }
+      } catch (error) {
+        chatText.innerHTML += `<p><b>Ошибка при запросе:</b> ${error.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
